@@ -1,12 +1,10 @@
 # 2.1 数据操作
 import torch  # 导入PyTorch库
 
+
 # 2.1.1. 张量的操作
 x = torch.arange(12)  # 创建一个包含0到11的张量
 print("x:", x)  # 打印张量x
-print("x的形状:", x.shape)  # 打印张量x的形状
-print("x的元素总数:", x.numel())  # 打印张量x的元素总数
-
 X = x.reshape(3, 4)  # 将张量x重塑为3行4列, 即3x4的矩阵
 print("X:", X)  # 打印重塑后的张量X
 Z = torch.zeros((2, 3, 4))  # 创建一个形状为(2,3,4)的全零张量
@@ -28,27 +26,72 @@ print("X是否连续:", X.is_contiguous())  # 检查张量是否在内存中连�
 
 # 形状变换
 X_squeezed = X.unsqueeze(0)  # 在维度0添加长度为1的轴
+# 说明
+# X.shape = 3x4
+# X.unsqueeze(0)的形状 = 1x3x4
 print("X.unsqueeze(0)的形状:", X_squeezed.shape)  # 打印添加维度后的形状
+print("X.unsqueeze(0)的内容:", X_squeezed)  # 打印添加维度后的内容
+
+X_squeezed = X.unsqueeze(1)  # 在维度1添加长度为1的轴
+# 说明
+# X.shape = 3x4
+# X.unsqueeze(1)的形状 = 3x1x4
+print("X.unsqueeze(1)的形状:", X_squeezed.shape)  # 打印添加维度后的形状
+print("X.unsqueeze(1)的内容:", X_squeezed)  # 打印添加维度后的内容
+
 X_flattened = X.flatten()  # 将张量展平为1D
 print("X.flatten()的形状:", X_flattened.shape)  # 打印展平后的形状
+print("X.flatten()的内容:", X_flattened)  # 打印展平后的内容
+
 X_flattened_partial = X.flatten(start_dim=1)  # 从维度1开始展平
 print("X.flatten(start_dim=1)的形状:", X_flattened_partial.shape)  # 打印部分展平后的形状
+print("X.flatten(start_dim=1)的内容:", X_flattened_partial)  # 打印部分展平后的内容
+
+# 3D张量的flatten示例1
+X_3d = torch.arange(24).reshape(2, 3, 4)  # 创建2x3x4的3D张量
+print("\n3D张量示例:", X_3d)
+print("X_3d.shape:", X_3d.shape)  # (2, 3, 4)
+print("X_3d.flatten(start_dim=1).shape:", X_3d.flatten(start_dim=1).shape)  # (2, 12)，展平后两维
+print("X_3d.flatten(start_dim=1)的内容:", X_3d.flatten(start_dim=1))  # 打印部分展平后的内容
+print("X_3d.flatten(start_dim=2).shape:", X_3d.flatten(start_dim=2).shape)  # (2, 3, 4)，无变化
+print("X_3d.flatten(start_dim=2)的内容:", X_3d.flatten(start_dim=2))  # 打印部分展平后的内容
+
+# 3D张量的flatten示例2
+X_3d = torch.arange(36).reshape(3, 3, 4)  # 创建3x3x4的3D张量
+print("\n3D张量示例:", X_3d)
+print("X_3d.shape:", X_3d.shape)  # (3, 3, 4)
+print("X_3d.flatten(start_dim=1).shape:", X_3d.flatten(start_dim=1).shape)  # (3, 12)，展平后两维
+print("X_3d.flatten(start_dim=1)的内容:", X_3d.flatten(start_dim=1))  # 打印部分展平后的内容
+print("X_3d.flatten(start_dim=2).shape:", X_3d.flatten(start_dim=2).shape)  # (3, 12)，无变化
+print("X_3d.flatten(start_dim=2)的内容:", X_3d.flatten(start_dim=2))  # 打印部分展平后的内容
 
 # 维度操作
 X_transposed = X.transpose(0, 1)  # 交换维度0和维度1
 print("X.transpose(0, 1)的形状:", X_transposed.shape)  # 打印转置后的形状
+print("X的内容:", X)  # 打印转置后的内容
+print("X.transpose(0, 1)的内容:", X_transposed)  # 打印转置后的内容
 X_permuted = X.permute(1, 0)  # 按照指定顺序重新排列维度
 print("X.permute(1, 0)的形状:", X_permuted.shape)  # 打印重排后的形状
+print("X.permute(1, 0)的内容:", X_permuted)  # 打印重排后的内容
 X_t = X.t()  # 矩阵转置（仅适用于2D张量）
 print("X.t()的形状:", X_t.shape)  # 打印转置后的形状
+print("X.t()的内容:", X_t)  # 打印转置后的内容
 
 # 复制和扩展
 X_cloned = X.clone()  # 创建张量的深拷贝
 print("X.clone()是否为副本:", X_cloned is not X)  # 检查是否为副本
+print("X_cloned的内容:", X_cloned)  # 打印深拷贝后的内容
+print("X的内容:", X)  # 打印转置后的内容
+
 X_repeated = X.repeat(2, 1)  # 沿维度0重复2次，维度1重复1次
 print("X.repeat(2, 1)的形状:", X_repeated.shape)  # 打印重复后的形状
+print("X.repeat(2, 1)的内容:", X_repeated)  # 打印重复后的内容
+print("X的内容:", X)  # 打印转置后的内容
+
 X_expanded = X.unsqueeze(0).expand(3, -1, -1)  # 扩展张量（不复制数据）
 print("X.expand(3, -1, -1)的形状:", X_expanded.shape)  # 打印扩展后的形状
+print("X.expand(3, -1, -1)的内容:", X_expanded)  # 打印扩展后的内容
+print("X的内容:", X)  # 打印转置后的内容
 
 # 类型转换
 X_float = X.float()  # 转换为float32类型
@@ -65,7 +108,6 @@ X_list = X.tolist()  # 将张量转换为Python列表
 print("X.tolist()的类型:", type(X_list))  # 打印转换后的类型
 X_numpy = X.numpy()  # 将张量转换为NumPy数组
 print("X.numpy()的类型:", type(X_numpy))  # 打印转换后的类型
-
 
 
 # 2.1.2 张量的运算
@@ -94,13 +136,16 @@ print("大于比较", x>y)  # 逐元素比较x是否大于y
 print("小于比较", x<y)  # 逐元素比较x是否小于y
 print("等于比较", x==y)  # 逐元素比较x是否等于y
 print("不等于比较", x!=y)  # 逐元素比较x是否不等于y
-print("最大值", x.max())  # 计算x的最大值
-print("最小值", x.min())  # 计算x的最小值
-print("平均值", x.mean())  # 计算x的平均值
-print("标准差", x.std())  # 计算x的标准差
-print("方差", x.var())  # 计算x的方差
-print("最大值索引", x.argmax())  # 返回最大值的索引
-print("最小值索引", x.argmin())  # 返回最小值的索引
+
+# 聚合运算（需要浮点类型）
+x_float = x.float()  # 转换为浮点类型以便计算统计量
+print("最大值", x_float.max())  # 计算x的最大值
+print("最小值", x_float.min())  # 计算x的最小值
+print("平均值", x_float.mean())  # 计算x的平均值
+print("标准差", x_float.std())  # 计算x的标准差
+print("方差", x_float.var())  # 计算x的方差
+print("最大值索引", x_float.argmax())  # 返回最大值的索引
+print("最小值索引", x_float.argmin())  # 返回最小值的索引
 
 X = torch.arange(12, dtype=torch.float32).reshape((3,4))  # 创建一个3x4的float32类型张量
 Y = torch.tensor([[2, 1, 4, 3], [1, 2, 3, 4], [4, 3, 2, 1]])  # 创建一个3x4的张量

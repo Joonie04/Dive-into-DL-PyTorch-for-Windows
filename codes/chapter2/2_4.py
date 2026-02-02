@@ -1,8 +1,14 @@
 # 2.4 微积分
 
 import numpy as np  # 导入NumPy库
-from matplotlib_inline import backend_inline  # 导入matplotlib_inline后端
 import matplotlib.pyplot as plt  # 导入matplotlib.pyplot库
+
+try:
+    from matplotlib_inline import backend_inline  # 导入matplotlib_inline后端
+    HAS_MATPLOTLIB_INLINE = True
+except ImportError:
+    HAS_MATPLOTLIB_INLINE = False
+    print("警告: matplotlib_inline 未安装，跳过SVG格式设置")
 
 def f(x):  # 定义函数f(x)
     return 3*x**2 - 4*x  # 返回3x² - 4x
@@ -16,7 +22,8 @@ for i in range(5):  # 循环5次
     h *= 0.1  # 步长缩小10倍
 
 def use_svg_display():  # 定义使用SVG显示的函数
-    backend_inline.set_matplotlib_formats('svg')  # 设置matplotlib使用SVG格式
+    if HAS_MATPLOTLIB_INLINE:
+        backend_inline.set_matplotlib_formats('svg')  # 设置matplotlib使用SVG格式
 
 def set_figsize(figsize=(3.5, 2.5)):  # 定义设置图形大小的函数
     use_svg_display()  # 使用SVG显示
