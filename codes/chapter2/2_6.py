@@ -19,11 +19,14 @@ print(""*20)  # 打印空字符串（分隔线）
 
 counts = multinomial.Multinomial(10, fair_probs).sample((500,))  # 进行500组实验，每组10次投掷
 print('counts:', counts)  # 打印计数结果
+print('counts.shape:', counts.shape)  # 打印计数结果的形状
 cum_counts = counts.cumsum(dim=0)  # 计算累积计数
 print('cum_counts:', cum_counts)  # 打印累积计数
+print('cum_counts.shape:', cum_counts.shape)  # 打印累积计数的形状
 
 estimates = cum_counts / cum_counts.sum(dim=1, keepdims=True)  # 计算累积频率估计
 print('estimates:', estimates)  # 打印频率估计
+print('estimates.shape:', estimates.shape)  # 打印频率估计的形状
 
 plt.rcParams['figure.figsize'] = (6, 6)  # 设置图形大小为6x6英寸
 for i in range(6):  # 遍历6个面

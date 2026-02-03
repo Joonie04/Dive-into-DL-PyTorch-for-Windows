@@ -12,7 +12,7 @@ y = 2 * torch.dot(x, x)  # 计算2倍的x与x的点积
 print("y:", y)  # 打印y
 
 y.backward()  # 计算y对x的梯度
-print("x.grad:", x.grad)  # 打印x的梯度，dy/dx = 4x
+print("x.grad:", x.grad)  # 打印x的梯度，dy/dx = 4x, 因为y = 2 * x^2, 所以dy/dx = 4x
 
 x.grad == 4 * x  # 检查梯度是否等于4x
 print("x.grad == 4 * x:", x.grad == 4 * x)  # 打印比较结果
@@ -23,7 +23,7 @@ print("x.grad after zeroing:", x.grad)  # 打印清零后的梯度
 y = x.sum()  # 计算x所有元素的和
 print("y:", y)  # 打印y
 y.backward()  # 计算y对x的梯度
-print("x.grad:", x.grad)  # 打印x的梯度，dy/dx = 1
+print("x.grad:", x.grad)  # 打印x的梯度，dy/dx = 1, 因为y = x.sum(), 所以dy/dx = 1
 
 print("-"*20)  # 打印分隔线
 
@@ -35,7 +35,7 @@ y = x * x  # 计算x的逐元素平方
 print("y:", y)  # 打印y
 
 y.sum().backward()  # 对y求和后计算梯度
-print("x.grad after y.sum().backward():", x.grad)  # 打印x的梯度，dy/dx = 2x
+print("x.grad after y.sum().backward():", x.grad)  # 打印x的梯度，dy/dx = 2x, 因为y = x^2, 所以dy/dx = 2x
 
 print("-"*20)  # 打印分隔线
 
@@ -47,17 +47,17 @@ print("x:", x)  # 打印x
 print("y:", y)  # 打印y
 
 u = y.detach()  # 分离y的计算图，得到u
-print("u (detached y):", u)  # 打印分离后的u
+print("u (detached y):", u)  # 打印分离后的u, 这时候u是一个新的张量, 它的计算图被分离了, 所以它的梯度不会被计算
 
 z = u * x  # 计算z = u * x
 print("z:", z)  # 打印z
 
 z.sum().backward()  # 对z求和后计算梯度
-print("x.grad after z.sum().backward():", x.grad)  # 打印x的梯度，dz/dx = u
+print("x.grad after z.sum().backward():", x.grad)  # 打印x的梯度，dz/dx = u, 因为z = u * x, 所以dz/dx = u
 
 x.grad.zero_()  # 将x的梯度清零
 y.sum().backward()  # 对y求和后计算梯度
-print("x.grad == 2 * x after y.sum().backward():", x.grad) # 打印比较结果，dy/dx = 2x
+print("x.grad == 2 * x after y.sum().backward():", x.grad) # 打印比较结果，dy/dx = 2x, 因为y = x^2, 所以dy/dx = 2x
 
 print("-"*20)  # 打印分隔线
 
@@ -88,7 +88,7 @@ a = torch.randn(size=(), requires_grad=True)  # 创建一个标量随机张量�
 d = f(a)  # 计算d = f(a)
 d.backward()  # 计算d对a的梯度
 
-print("a.grad:", a.grad)  # 打印a的梯度
-print("a.grad == d / a:", a.grad == d / a)  # 打印比较结果
+print("a.grad:", a.grad)  # 打印a的梯度，通过反向传播自动计算得到
+print("a.grad == d / a:", a.grad == d / a)  # 打印比较结果，验证自动计算的梯度是否等于理论梯度 d/a
 
 print("-"*20)  # 打印分隔线

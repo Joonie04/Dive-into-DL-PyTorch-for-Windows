@@ -8,6 +8,7 @@ import pandas as pd  # 导入pandas库并简写为pd
 
 data = pd.read_csv(os.path.join(data_dir, "house_tiny.csv"))  # 读取CSV文件到DataFrame
 print("data:", data)  # 打印数据集
+print("data.shape:", data.shape)  # 打印数据集的形状（行数、列数）
 
 
 # 2.2.2 处理缺失值
@@ -22,4 +23,5 @@ import torch  # 导入PyTorch库
 X, y = torch.tensor(inputs.values), torch.tensor(outputs.values, dtype=torch.float32)  # 将DataFrame转换为PyTorch张量
 print("X:", X)  # 打印输入特征张量
 print("y:", y)  # 打印输出标签张量
-
+print("X.shape:", X.shape)  # 打印输入特征张量的形状（样本数、特征数）
+print("y.shape:", y.shape)  # 打印输出标签张量的形状（样本数）
