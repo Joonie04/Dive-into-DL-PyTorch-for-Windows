@@ -1,4 +1,5 @@
 # 3.1 线性回归
+## 3.1.1 线性回归的基本元素
 ## 3.1.2 向量化加速
 import math  # 导入数学库
 import time  # 导入时间库
@@ -44,8 +45,8 @@ print(f'{timer.stop():.5f} sec')  # 打印向量化相加的耗时
 
 ## 3.1.3 正态分布
 def normal(x, mu, sigma):  # 定义正态分布概率密度函数
-    p = 1 / math.sqrt(2 * math.pi * sigma**2)  # 计算归一化常数
-    return p * math.exp(-0.5 / sigma**2 * (x - mu)**2)  # 返回概率密度值
+    p = 1 / np.sqrt(2 * np.pi * sigma**2)  # 计算归一化常数
+    return p * np.exp(-0.5 / sigma**2 * (x - mu)**2)  # 返回概率密度值
 
 x = np.arange(-7, 7, 0.01)  # 创建从-7到7，步长为0.01的数组
 
@@ -53,6 +54,7 @@ x = np.arange(-7, 7, 0.01)  # 创建从-7到7，步长为0.01的数组
 params = [(0, 1), (0, 2), (3, 1)]  # 定义三组参数：(均值, 标准差)
 plt.figure(figsize=(4.5, 2.5))  # 设置图形大小
 for (mu, sigma), label in zip(params, [f'mean {mu}, std {sigma}' for mu, sigma in params]):  # 遍历参数和标签
+    print(f'normal({x[0]}, {mu}, {sigma}) = {normal(x[0], mu, sigma)}')  # 打印第一个点的概率密度值
     plt.plot(x, normal(x, mu, sigma), label=label)  # 绘制正态分布曲线
 plt.xlabel('x')  # 设置x轴标签
 plt.ylabel('p(x)')  # 设置y轴标签

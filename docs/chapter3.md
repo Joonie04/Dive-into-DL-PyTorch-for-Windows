@@ -60,6 +60,20 @@ def data_iter(batch_size, features, labels):
         yield features[batch_indices], labels[batch_indices]
 ```
 
+**代码说明**：
+- `yield`：使用生成器按需生成数据，节省内存
+- `random.shuffle(indices)`：随机打乱索引，确保每个 epoch 的数据顺序不同
+- `range(0, num_examples, batch_size)`：从 0 开始，每次增加 batch_size
+- `min(i + batch_size, num_examples)`：处理最后一个批次可能不足 batch_size 的情况
+- `features[batch_indices]`：根据索引批量提取特征和标签
+
+**执行流程**：
+1. 创建样本索引列表并随机打乱
+2. 按批次大小遍历索引
+3. 每次取 batch_size 个索引（最后一个批次可能不足）
+4. 根据索引从 features 和 labels 中提取数据
+5. 通过 yield 逐批返回数据
+
 ### 3.2.3 定义模型
 实现线性回归模型：
 
@@ -90,6 +104,43 @@ def sgd(params, lr, batch_size):
             param.grad.zero_()
 ```
 
+**代码说明**：
+
+- `torch.no_grad()`：禁用梯度计算的上下文管理器
+  - 参数更新时不需要计算梯度，因为梯度已经在 `backward()` 时计算完成
+  - 禁用梯度计算可以节省内存和计算资源
+  - 避免构建不必要的计算图
+
+- `param -= lr * param.grad / batch_size`：参数更新公式
+  - `lr`：学习率，控制更新步长
+  - `param.grad`：参数的梯度（通过反向传播计算得到）
+  - `-=`：减法赋值，沿梯度的**反方向**更新参数
+    - 为什么用 `-=` 而不是 `+=`：
+      - 梯度指向损失函数**增长最快**的方向
+      - 我们要**最小化**损失函数，所以要沿梯度的**反方向**移动
+      - 如果用 `+=`，参数会沿梯度方向移动，损失会越来越大（梯度上升）
+      - 举例：假设 $L(w) = w^2$，当前 $w=2$，梯度 $\frac{\partial L}{\partial w}=4$
+        - `-=`: $w = 2 - 0.1 \times 4 = 1.6$，损失从 4 降到 2.56（正确）
+        - `+=`: $w = 2 + 0.1 \times 4 = 2.4$，损失从 4 增加到 5.76（错误）
+  - `/ batch_size`：除以批次大小，使用**平均梯度**而不是梯度之和
+  - 为什么要除以 batch_size：
+    - `loss(y_hat, y)` 返回每个样本的损失，形状为 `(batch_size, 1)`
+    - `l.sum().backward()` 对损失求和后计算梯度
+    - 因此 `param.grad` 是整个批次的梯度**之和**
+    - 除以 `batch_size` 得到平均梯度，保持学习率的一致性
+    - 如果不除，当 `batch_size` 变化时需要相应调整学习率
+
+- `param.grad.zero_()`：清零梯度
+  - PyTorch 的梯度默认是**累积**的
+  - 每次调用 `backward()` 时，梯度会累加到 `param.grad` 上
+  - 必须在每次更新后手动清零，否则下次计算会使用错误的梯度值
+  - 下划线 `_` 表示原地操作（in-place operation）
+
+**数学原理**：
+- 损失函数：$L = \sum_{i=1}^{batch} \frac{1}{2}(y^{(i)} - \hat{y}^{(i)})^2$
+- 梯度：$\frac{\partial L}{\partial w} = \sum_{i=1}^{batch} (y^{(i)} - \hat{y}^{(i)})x^{(i)}$
+- 参数更新：$w \leftarrow w - \frac{lr}{batch\_size} \cdot \frac{\partial L}{\partial w}$
+
 ### 3.2.6 训练模型
 训练线性回归模型：
 
@@ -112,6 +163,114 @@ for epoch in range(num_epochs):
         train_l = squared_loss(linreg(features, w, b), labels)
         print(f'epoch {epoch + 1}, loss {float(train_l.mean()):f}')
 ```
+
+**代码说明**：
+
+**1. 参数初始化**：
+```python
+w = torch.normal(0, 0.01, size=(2, 1), requires_grad=True)
+b = torch.zeros(1, requires_grad=True)
+```
+- `w`：权重参数，从均值为0、标准差为0.01的正态分布中随机初始化
+  - 小随机值初始化可以避免对称性问题
+  - `requires_grad=True` 表示需要计算梯度
+- `b`：偏置参数，初始化为0
+  - `requires_grad=True` 表示需要计算梯度
+
+**2. 训练超参数**：
+```python
+lr = 0.03          # 学习率，控制参数更新的步长
+num_epochs = 3     # 训练轮数，遍历整个数据集的次数
+batch_size = 10    # 批次大小，每次训练使用的样本数
+```
+
+**3. 训练循环**：
+```python
+for epoch in range(num_epochs):
+    for X, y in data_iter(batch_size, features, labels):
+        # 前向传播
+        y_hat = linreg(X, w, b)
+        # 计算损失
+        l = squared_loss(y_hat, y)
+        # 反向传播
+        l.sum().backward()
+        # 参数更新
+        sgd([w, b], lr, batch_size)
+```
+
+**训练步骤详解**：
+
+- **前向传播**：`y_hat = linreg(X, w, b)`
+  - 输入：特征矩阵 X，权重 w，偏置 b
+  - 计算：`y_hat = X @ w + b`
+  - 输出：预测值 y_hat
+
+- **计算损失**：`l = squared_loss(y_hat, y)`
+  - 计算每个样本的均方损失：`(y_hat - y)^2 / 2`
+  - 返回形状为 `(batch_size, 1)` 的损失张量
+
+- **反向传播**：`l.sum().backward()`
+  - `l.sum()`：对批次中所有样本的损失求和
+  - `.backward()`：计算损失对参数的梯度
+  - 梯度存储在 `w.grad` 和 `b.grad` 中
+
+- **参数更新**：`sgd([w, b], lr, batch_size)`
+  - 使用梯度下降更新参数
+  - `w = w - lr * w.grad / batch_size`
+  - `b = b - lr * b.grad / batch_size`
+  - 清零梯度，为下一批次做准备
+
+**4. 评估训练效果**：
+```python
+with torch.no_grad():
+    train_l = squared_loss(linreg(features, w, b), labels)
+    print(f'epoch {epoch + 1}, loss {float(train_l.mean()):f}')
+```
+- `torch.no_grad()`：禁用梯度计算，节省资源
+- 使用所有数据计算当前的平均损失
+- 打印每个 epoch 的损失值，观察训练进度
+
+**前向传播和反向传播的数学原理**：
+
+**前向传播**：
+```
+z = X @ w + b           # 线性变换
+y_hat = z               # 预测值
+loss = (y_hat - y)^2 / 2  # 均方损失
+L = sum(loss)           # 总损失
+```
+
+**反向传播（链式法则）**：
+```
+∂L/∂loss = 1
+∂loss/∂y_hat = (y_hat - y)
+∂y_hat/∂z = 1
+∂z/∂w = X
+∂z/∂b = 1
+
+∂L/∂w = X^T @ (y_hat - y)
+∂L/∂b = sum(y_hat - y)
+```
+
+**梯度计算说明**：
+- `∂z/∂w = X`：雅可比矩阵，形状为 (n, m)
+- `∂L/∂w = X^T @ (y_hat - y)`：在链式法则中需要转置雅可比矩阵
+  - X^T 的形状为 (m, n)
+  - (y_hat - y) 的形状为 (n, 1)
+  - 结果形状为 (m, 1)，与 w 的形状一致
+
+**参数更新**：
+```
+w = w - lr * ∂L/∂w / batch_size
+b = b - lr * ∂L/∂b / batch_size
+```
+
+**训练过程**：
+1. 每个 epoch 遍历整个数据集
+2. 每个批次进行一次前向传播和反向传播
+3. 使用梯度更新参数
+4. 每个 epoch 结束后评估整体损失
+5. 损失逐渐减小，模型参数逐渐接近真实值
 
 ## 3.3 线性回归的简洁实现
 
@@ -171,6 +330,139 @@ for epoch in range(num_epochs):
     l = loss(net(features), labels)
     print(f'epoch {epoch + 1}, loss {l:f}')
 ```
+
+**代码说明**：
+
+**1. 数据生成和加载**：
+```python
+features, labels = synthetic_data(true_w, true_b, 1000)
+data_iter = load_array((features, labels), batch_size)
+```
+- `synthetic_data`：生成合成数据集，包含特征和标签
+- `load_array`：使用 PyTorch 的 DataLoader 创建数据迭代器
+  - `batch_size`：每批次的样本数
+  - `shuffle=is_train`：训练时打乱数据顺序
+
+**2. 定义模型**：
+```python
+net = nn.Sequential(nn.Linear(2, 1))
+```
+
+**重要说明**：
+- **只有一层**，不是两层！
+- `nn.Sequential` 是一个容器，用于包装多个层，本身不是层
+- `nn.Linear(2, 1)` 是一个线性层：
+  - 输入维度：2（两个特征）
+  - 输出维度：1（一个预测值）
+
+**nn.Linear 的内部实现**：
+```python
+# nn.Linear 内部自动实现以下公式
+y = X @ W^T + b
+```
+- `X`：输入特征矩阵，形状 (n, 2)
+- `W`：权重矩阵，形状 (1, 2)
+- `b`：偏置，形状 (1,)
+- `y`：输出，形状 (n, 1)
+
+**3. 初始化模型参数**：
+```python
+net[0].weight.data.normal_(0, 0.01)
+net[0].bias.data.fill_(0)
+```
+- `net[0]`：访问第一个层（即 nn.Linear(2, 1)）
+- `weight.data.normal_(0, 0.01)`：权重从均值为0、标准差为0.01的正态分布初始化
+- `bias.data.fill_(0)`：偏置初始化为0
+
+**4. 定义损失函数和优化器**：
+```python
+loss = nn.MSELoss()
+trainer = torch.optim.SGD(net.parameters(), lr=0.03)
+```
+- `nn.MSELoss()`：均方误差损失函数
+- `torch.optim.SGD`：随机梯度下降优化器
+  - `net.parameters()`：返回模型的所有可训练参数
+  - `lr=0.03`：学习率
+
+**5. 训练模型**：
+```python
+for epoch in range(num_epochs):
+    for X, y in data_iter:
+        l = loss(net(X), y)
+        trainer.zero_grad()
+        l.backward()
+        trainer.step()
+```
+
+**训练步骤详解**：
+
+- **前向传播**：`l = loss(net(X), y)`
+  - `net(X)`：计算预测值 `y_hat = X @ W^T + b`
+  - `loss(y_hat, y)`：计算均方误差
+
+- **清零梯度**：`trainer.zero_grad()`
+  - 清空所有参数的梯度
+  - PyTorch 的梯度默认是累积的，必须手动清零
+
+- **反向传播**：`l.backward()`
+  - 计算损失对参数的梯度
+  - 梯度存储在 `param.grad` 中
+
+- **更新参数**：`trainer.step()`
+  - **trainer.step() 的内部实现**：
+    ```python
+    for param in net.parameters():
+        if param.grad is not None:
+            # 执行：param = param - lr * param.grad
+            param.data.add_(-lr, param.grad.data)
+    ```
+  - 使用梯度下降更新参数
+  - `w = w - lr * w.grad`
+  - `b = b - lr * b.grad`
+
+**6. 评估训练效果**：
+```python
+l = loss(net(features), labels)
+print(f'epoch {epoch + 1}, loss {l:f}')
+```
+- 使用所有数据计算当前损失
+- 打印每个 epoch 的损失值
+
+**获取学习到的参数**：
+```python
+w = net[0].weight.data
+b = net[0].bias.data
+```
+- `net[0].weight.data`：学习到的权重
+- `net[0].bias.data`：学习到的偏置
+
+**多层网络的扩展**：
+
+如果需要构建多层神经网络，可以在 `nn.Sequential` 中添加更多层：
+
+```python
+# 两层神经网络
+net = nn.Sequential(
+    nn.Linear(3, 3),  # 第一层：3维输入 → 3维隐藏层
+    nn.Linear(3, 1)   # 第二层：3维隐藏层 → 1维输出
+)
+
+# 对应的数学公式
+# y_hat = (X @ W1^T + b1) @ W2^T + b2
+```
+
+**多层网络的核心思想**：
+- 每一层都是相同的模式：`输出 = 输入 @ 权重 + 偏置`
+- 多层就是把上一层的输出作为下一层的输入
+- 本质上就是不断嵌套 `@ W + b` 操作
+
+**单层 vs 多层对比**：
+
+| 模型 | 代码 | 公式 |
+|------|------|------|
+| 线性回归（单层） | `nn.Linear(2, 1)` | `y = X @ W + b` |
+| 两层神经网络 | `nn.Linear(3, 3), nn.Linear(3, 1)` | `y = (X @ W1 + b1) @ W2 + b2` |
+| 三层神经网络 | `nn.Linear(3, 5), nn.Linear(5, 3), nn.Linear(3, 1)` | `y = ((X @ W1 + b1) @ W2 + b2) @ W3 + b3` |
 
 ## 3.4 Softmax回归
 

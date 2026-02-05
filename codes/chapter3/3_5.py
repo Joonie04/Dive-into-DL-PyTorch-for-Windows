@@ -1,3 +1,4 @@
+# 3.5 图像分类数据集
 import torch  # 导入PyTorch库
 import torchvision  # 导入torchvision库，用于计算机视觉任务
 from torch.utils import data  # 导入PyTorch数据处理工具

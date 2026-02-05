@@ -1,9 +1,11 @@
+# 3.2 线性回归的从零开始实现
+
 import random  # 导入随机数模块
 import torch  # 导入PyTorch库
 
 def synthetic_data(w, b, num_examples):  # 定义生成合成数据的函数
     """生成y=Xw+b+噪声"""  # 函数文档字符串
-    X = torch.normal(0, 1, (num_examples, len(w)))  # 生成均值为0、标准差为1的正态分布特征矩阵
+    X = torch.normal(0, 1, (num_examples, len(w)))  # 生成均值为0、标准差为1的正态分布特征矩阵. (num_examples, len(w)) 即 num_examples 行 x len(w) 列的矩阵
     y = torch.matmul(X, w) + b  # 计算线性回归的输出 y = Xw + b
     y += torch.normal(0, 0.01, y.shape)  # 添加均值为0、标准差为0.01的高斯噪声
     return X, y.reshape((-1, 1))  # 返回特征矩阵X和重塑后的标签y
@@ -49,7 +51,7 @@ if __name__ == '__main__':  # 当脚本作为主程序运行时执行
     b = torch.zeros(1, requires_grad=True)  # 初始化偏置参数，需要计算梯度
 
     print(f'真实参数: w={true_w}, b={true_b}')  # 打印真实参数
-    print(f'初始预测参数: w={w.squeeze()}, b={b.squeeze()}')  # 打印初始预测参数
+    print(f'初始预测参数: w={w.squeeze()}, b={b.squeeze()}')  # 打印初始预测参数; squeeze() 函数用于移除张量中所有大小为1的维度(只是为了显示)
 
     for epoch in range(num_epochs):  # 遍历每一轮训练
         for X, y in deta_iter(batch_size, features, labels):  # 遍历每个小批量数据

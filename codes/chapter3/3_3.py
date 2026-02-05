@@ -1,3 +1,4 @@
+# 3.3 线性回归的简洁实现
 import numpy as np  # 导入NumPy库
 import torch  # 导入PyTorch库
 from torch.utils import data  # 导入PyTorch数据处理工具
@@ -22,7 +23,6 @@ def load_array(data_arrays, batch_size, is_train=True):  # 定义加载数据的
 
 if __name__ == '__main__':  # 当脚本作为主程序运行时执行
 
-    
     true_w = torch.tensor([2, -3.4])  # 设置真实的权重参数
     true_b = 4.2  # 设置真实的偏置参数
     features, labels = synthetic_data(true_w, true_b, 1000)  # 生成1000个样本的合成数据

@@ -144,7 +144,7 @@ print("exp运算", torch.exp(x))  # 张量逐元素计算指数
 print("log运算", torch.log(x))  # 张量逐元素计算自然对数
 print("sqrt运算", torch.sqrt(x))  # 张量逐元素计算平方根
 print("abs运算", torch.abs(x))  # 张量逐元素计算绝对值
-print("sign运算", torch.sign(x))  # 张量逐元素计算符号
+print("sign运算", torch.sign(x))  # 张量逐元素计算符号, 大于0为1, 小于0为-1, 等于0为0
 print("ceil运算", torch.ceil(x))  # 张量逐元素向上取整
 print("floor运算", torch.floor(x))  # 张量逐元素向下取整
 print("round运算", torch.round(x))  # 张量逐元素四舍五入
@@ -224,7 +224,7 @@ print("id(Y) == before", id(Y) == before)  # 比较Y的内存地址是否改变
 
 Z = torch.zeros_like(Y)  # 创建一个形状和类型与Y相同的全零张量
 print("Z:", Z)  # 打印Z
-Z[:] = X + Y  # 将X+Y的结果赋值给Z的所有元素
+Z[:] = X + Y  # 将X+Y的结果赋值给Z的所有元素, 不创建新的张量. 原地赋值; 等价于Z = X + Y, 但是Z = X + Y会创建新的张量, 而Z[:] = X + Y不会创建新的张量.
 print("Z:", Z)  # 打印Z
 
 before = id(X)  # 获取X的内存地址

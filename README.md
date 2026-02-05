@@ -22,10 +22,9 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install matplotlib numpy pandas scikit-learn
 ```
 
-## 感谢优秀的开源项目
+## 感谢优秀的开源资料
 - [动手学深度学习(PyTorch版)](https://zh.d2l.ai/)
 - [动手学深度学习(PyTorch版)中文版本](https://github.com/d2l-ai/d2l-zh)
 - [动手学深度学习(PyTorch版)英文版本](https://github.com/d2l-ai/d2l-en)
 - [PyTorch官方文档](https://pytorch.org/docs/stable/index.html)
 - [PyTorch中文文档](https://pytorch-cn.readthedocs.io/zh/latest/index.html)
-- 

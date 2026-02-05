@@ -51,7 +51,7 @@ A = torch.arange(20, dtype=torch.float32).reshape(5, 4)  # 创建一个5x4的flo
 B = A.clone()  # 克隆矩阵A得到矩阵B, 并保持内存地址不同
 id_a = id(A)  # 获取矩阵A的内存地址
 id_b = id(B)  # 获取矩阵B的内存地址
-print("id(A)==id(B):", id_a == id_b)  # 打印矩阵A的内存地址是否与矩阵B的内存地址相等
+print("id(A)==id(B):", id_a == id_b)  # 打印矩阵A, B的内存地址. 结果为False因为使用了clone()方法, 它会创建一个新的张量, 而不是简单的引用赋值.
 print("A:", A)  # 打印矩阵A
 print("B:", B)  # 打印矩阵B
 print("A+B:", A+B)  # 打印矩阵A和B的和
@@ -158,6 +158,7 @@ print("A.shape:", A.shape)  # 打印矩阵A的形状
 print("B:", B)  # 打印矩阵B
 print("B.shape:", B.shape)  # 打印矩阵B的形状
 print("torch.mm(A, B):", torch.mm(A, B))  # 打印矩阵A与矩阵B的乘积
+print("torch.mm(A, B).shape:", torch.mm(A, B).shape)  # 使用@运算符计算矩阵乘积的形状
 print("A @ B:", A @ B)  # 使用@运算符计算矩阵乘积
 print("(A @ B).shape:", (A @ B).shape)  # 使用@运算符计算矩阵乘积的形状
 

@@ -1,3 +1,4 @@
+# 3.6 softmax回归从零开始实现
 import torch  # 导入PyTorch库
 import torchvision  # 导入torchvision库，用于计算机视觉任务
 from torch.utils import data  # 导入PyTorch数据处理工具
@@ -55,7 +56,7 @@ def softmax(X):  # 定义softmax函数
     return X_exp / partition  # 广播机制，返回softmax概率分布
 
 def net(X):  # 定义softmax回归模型
-    return softmax(torch.matmul(X.reshape((-1, W.shape[0])), W) + b)  # 计算softmax回归的输出
+    return softmax(torch.matmul(X.reshape((-1, W.shape[1])), W) + b)  # 计算softmax回归的输出
 
 def cross_entropy(y_hat, y):  # 定义交叉熵损失函数
     return -torch.log(y_hat[range(len(y_hat)), y])  # 计算交叉熵损失
