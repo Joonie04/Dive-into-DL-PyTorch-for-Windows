@@ -1,3 +1,5 @@
+# 3.7 Softmax回归的简洁实现
+
 import torch  # 导入PyTorch库
 import torchvision  # 导入torchvision库，用于计算机视觉任务
 from torch import nn  # 导入PyTorch神经网络模块

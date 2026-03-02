@@ -549,11 +549,72 @@ W = torch.normal(0, 0.01, size=(num_inputs, num_outputs), requires_grad=True)
 b = torch.zeros(num_outputs, requires_grad=True)
 ```
 
+**参数说明**：
+
+- `num_inputs = 784`：输入特征数
+  - Fashion-MNIST 图像大小为 28×28 像素
+  - 展平后为 784 个特征
+
+- `num_outputs = 10`：输出类别数
+  - Fashion-MNIST 有 10 个类别（t-shirt, trouser, pullover 等）
+
+- `W`：权重矩阵，形状 `(784, 10)`
+  - 每一列对应一个类别的权重
+  - 使用小随机值初始化，避免对称性问题
+
+- `b`：偏置向量，形状 `(10,)`
+  - 每个元素对应一个类别的偏置
+  - 初始化为 0
+
 ### 3.6.2 定义模型
 
 ```python
+def softmax(X):
+    X_exp = torch.exp(X)
+    partition = X_exp.sum(1, keepdim=True)
+    return X_exp / partition
+
 def net(X):
     return softmax(torch.matmul(X.reshape((-1, W.shape[0])), W) + b)
+```
+
+**Softmax 函数详解**：
+
+**数学公式**：
+$$\text{softmax}(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{C} e^{x_j}}$$
+
+**计算步骤**：
+1. **计算指数**：`X_exp = torch.exp(X)`
+   - 将任意实数转换为正数
+   - 例如：`[2.0, 1.0, 0.1]` → `[7.389, 2.718, 1.105]`
+
+2. **计算总和**：`partition = X_exp.sum(1, keepdim=True)`
+   - 对每行求和（每个样本的所有类别）
+   - `keepdim=True` 保持维度，便于广播
+
+3. **归一化**：`X_exp / partition`
+   - 除以总和，得到概率分布
+   - 所有概率之和为 1
+
+**为什么 Softmax 输出是概率？**
+
+| 性质 | 说明 |
+|------|------|
+| 非负性 | $e^{x_i} > 0$，所以 $\text{softmax}(x_i) > 0$ |
+| 归一化 | $\sum_{i=1}^{C} \text{softmax}(x_i) = 1$ |
+| 范围 | 所有值在 $[0, 1]$ 之间 |
+
+**网络结构**：
+```
+输入 X (batch_size, 784)
+    ↓
+线性变换: X @ W + b
+    ↓
+输出 (batch_size, 10)  # logits
+    ↓
+Softmax 归一化
+    ↓
+概率分布 (batch_size, 10)
 ```
 
 ### 3.6.3 定义损失函数
@@ -562,6 +623,54 @@ def net(X):
 def cross_entropy(y_hat, y):
     return -torch.log(y_hat[range(len(y_hat)), y])
 ```
+
+**交叉熵损失详解**：
+
+**数学公式**：
+$$H(y, \hat{y}) = -\sum_{i=1}^{C} y_i \log(\hat{y}_i)$$
+
+**为什么使用交叉熵？**
+
+**1. 适合多分类问题**：
+- 线性回归：预测连续值 → 使用均方误差（MSE）
+- 二分类问题：预测是/否 → 使用二元交叉熵
+- **多分类问题**：预测多个类别 → 使用交叉熵
+
+**2. 只关注真实类别**：
+
+假设有 3 个类别，真实标签是第 0 类（猫）：
+
+```python
+y_hat = [0.7, 0.2, 0.1]  # 预测概率
+y = 0                     # 真实标签
+
+# 交叉熵只计算真实类别的损失
+loss = -log(0.7) = 0.357
+```
+
+**3. 对比均方误差（MSE）**：
+
+| 损失函数 | 适用场景 | 特点 |
+|---------|---------|------|
+| MSE | 回归问题 | 对所有维度计算误差 |
+| 交叉熵 | 多分类 | 只关注真实类别的预测概率 |
+
+**交叉熵的优势**：
+- 梯度下降时收敛更快
+- 数值稳定性更好
+- 适合概率分布的输出
+
+**代码解析**：
+```python
+y_hat[range(len(y_hat)), y]
+```
+- `range(len(y_hat))`：生成 `[0, 1, 2, ..., batch_size-1]`
+- `y`：真实标签，例如 `[0, 2, 1, ...]`
+- `y_hat[range(len(y_hat)), y]`：提取每个样本真实类别的预测概率
+  - 第 0 个样本的第 0 类的概率
+  - 第 1 个样本的第 2 类的概率
+  - 第 2 个样本的第 1 类的概率
+  - ...
 
 ### 3.6.4 定义准确率
 
@@ -573,6 +682,20 @@ def accuracy(y_hat, y):
     cmp = y_hat.type(y.dtype) == y
     return float(cmp.type(y.dtype).sum())
 ```
+
+**准确率计算步骤**：
+
+1. **获取预测类别**：`y_hat.argmax(axis=1)`
+   - `y_hat` 形状：`(batch_size, 10)`
+   - `argmax(axis=1)`：返回每行最大值的索引（预测类别）
+   - 例如：`[[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]]` → `[0, 2]`
+
+2. **比较预测和真实标签**：`y_hat.type(y.dtype) == y`
+   - 返回布尔张量，True 表示预测正确
+
+3. **计算正确数量**：`cmp.type(y.dtype).sum()`
+   - 将布尔值转换为整数（True=1, False=0）
+   - 求和得到正确预测的数量
 
 ### 3.6.5 训练模型
 
@@ -590,7 +713,14 @@ class Accumulator:
         self.data = [0.0] * len(self.data)
     def __getitem__(self, idx):
         return self.data[idx]
+```
 
+**Accumulator 类说明**：
+- 用于在训练过程中累加多个指标
+- 例如：累加损失、正确预测数、样本数
+- `add(*args)`：累加多个值到对应的变量
+
+```python
 # 定义evaluate_accuracy函数
 def evaluate_accuracy(net, data_iter):
     """计算在指定数据集上模型的精度"""
@@ -601,7 +731,24 @@ def evaluate_accuracy(net, data_iter):
         for X, y in data_iter:
             metric.add(accuracy(net(X), y), y.numel())
     return metric[0] / metric[1]
+```
 
+**evaluate_accuracy 函数说明**：
+
+**为什么要设置评估模式？**
+
+| 行为 | 训练模式 | 评估模式 |
+|------|-----------|-----------|
+| Dropout | 随机丢弃神经元 | 不丢弃（使用全部神经元） |
+| Batch Normalization | 使用当前批次的统计量 | 使用训练时的统计量 |
+| 梯度计算 | 需要计算 | 不需要计算 |
+
+**为什么使用 `torch.no_grad()`？**
+- 评估时不需要计算梯度
+- 节省内存和计算资源
+- 避免意外修改梯度
+
+```python
 # 定义train_epoch_ch3函数
 def train_epoch_ch3(net, train_iter, loss, updater):
     """训练模型一个迭代周期（定义见第3章）"""
@@ -627,7 +774,62 @@ def train_epoch_ch3(net, train_iter, loss, updater):
         metric.add(float(l.sum()), accuracy(y_hat, y), y.numel())
     # 返回训练损失和训练精度
     return metric[0] / metric[2], metric[1] / metric[2]
+```
 
+**train_epoch_ch3 函数说明**：
+
+**训练步骤**：
+
+1. **设置训练模式**：`net.train()`
+   - 启用 Dropout、Batch Normalization 等训练特有行为
+
+2. **前向传播**：`y_hat = net(X)`
+   - 计算预测值
+
+3. **计算损失**：`l = loss(y_hat, y)`
+   - 计算交叉熵损失
+
+4. **反向传播**：`l.sum().backward()`
+   - 计算梯度
+
+5. **更新参数**：`updater(X.shape[0])`
+   - 使用梯度下降更新参数
+
+6. **累加指标**：`metric.add(float(l.sum()), accuracy(y_hat, y), y.numel())`
+   - 累加损失、正确预测数、样本数
+
+**为什么要累加指标？**
+
+每个 epoch 有多个批次，需要统计所有批次的总损失、总正确数、总样本数，最后计算平均值：
+
+```python
+# 平均损失 = 总损失 / 总样本数
+# 平均准确率 = 总正确数 / 总样本数
+return metric[0] / metric[2], metric[1] / metric[2]
+```
+
+**训练模式 vs 评估模式对比**：
+
+| 模式 | 代码 | 作用 |
+|------|------|------|
+| 训练模式 | `net.train()` | 启用 Dropout、Batch Norm 等训练特有行为 |
+| 评估模式 | `net.eval()` | 关闭训练特有行为，使用训练时的统计量 |
+
+**完整训练流程**：
+
+```
+每个 epoch：
+  ├── 遍历所有批次
+  │   ├── 前向传播：计算预测值
+  │   ├── 计算损失：交叉熵
+  │   ├── 反向传播：计算梯度
+  │   ├── 更新参数：梯度下降
+  │   └── 累加指标：损失、正确数、样本数
+  ├── 计算平均损失和准确率
+  └── 评估测试集准确率
+```
+
+```python
 # 定义Animator类
 class Animator:
     """在动画中绘制数据"""
@@ -725,6 +927,159 @@ trainer = torch.optim.SGD(net.parameters(), lr=0.1)
 # 训练模型
 train_ch3(net, train_iter, test_iter, loss, num_epochs, trainer)
 ```
+
+**代码说明**：
+
+**1. 定义模型**：
+```python
+net = nn.Sequential(nn.Flatten(), nn.Linear(784, 10))
+```
+
+**网络结构**：
+
+| 层 | 作用 | 输入形状 | 输出形状 |
+|---|------|---------|---------|
+| `nn.Flatten()` | 展平图像 | (batch, 28, 28) | (batch, 784) |
+| `nn.Linear(784, 10)` | 线性变换 | (batch, 784) | (batch, 10) |
+
+**重要说明**：
+- 网络输出的是 **logits**（未归一化的分数），不是概率
+- logits 可以是任意实数，没有经过 softmax 归一化
+
+**2. 初始化模型参数**：
+```python
+net.apply(init_weights)
+```
+- `net.apply(init_weights)`：递归地对所有层应用初始化函数
+- `init_weights`：对线性层的权重使用正态分布初始化
+
+**3. 定义损失函数**：
+```python
+loss = nn.CrossEntropyLoss(reduction='none')
+```
+
+**关键问题：Softmax 在哪里？**
+
+**答案**：`nn.CrossEntropyLoss` 内部已经包含了 softmax 操作！
+
+**nn.CrossEntropyLoss 的内部实现**：
+```python
+nn.CrossEntropyLoss() = nn.LogSoftmax() + nn.NLLLoss()
+```
+
+**计算流程**：
+```
+输入 X
+    ↓
+nn.Flatten()  # 展平：(batch, 28, 28) → (batch, 784)
+    ↓
+nn.Linear(784, 10)  # 线性变换：(batch, 784) → (batch, 10)
+    ↓
+输出 logits（未归一化的分数）
+    ↓
+nn.CrossEntropyLoss 内部：
+    ├── LogSoftmax：log(softmax(logits))
+    └── NLLLoss：计算负对数似然
+```
+
+**4. 两种实现的对比**：
+
+| 实现 | 网络输出 | 损失函数 | Softmax 在哪里？ |
+|------|---------|---------|-----------------|
+| 3_6.py（从零开始） | 概率 | 手动交叉熵 | 网络中手动定义 |
+| 3_7.py（简洁实现） | logits | nn.CrossEntropyLoss | 损失函数内部 |
+
+**从零开始实现（3_6.py）**：
+```python
+# 手动定义 softmax
+def softmax(X):
+    X_exp = torch.exp(X)
+    partition = X_exp.sum(1, keepdim=True)
+    return X_exp / partition
+
+# 网络输出概率
+def net(X):
+    return softmax(torch.matmul(X.reshape((-1, W.shape[1])), W) + b)
+
+# 手动定义交叉熵
+def cross_entropy(y_hat, y):
+    return -torch.log(y_hat[range(len(y_hat)), y])
+```
+
+**简洁实现（3_7.py）**：
+```python
+# 网络输出 logits（未归一化的分数）
+net = nn.Sequential(nn.Flatten(), nn.Linear(784, 10))
+
+# CrossEntropyLoss 内部包含 softmax
+loss = nn.CrossEntropyLoss(reduction='none')
+```
+
+**5. 为什么这样设计？**
+
+**数值稳定性**：
+
+手动实现可能出现数值问题：
+```python
+# 可能出现数值不稳定
+softmax = exp(x) / sum(exp(x))
+log_softmax = log(softmax)  # 可能出现 log(0) 的问题
+```
+
+PyTorch 内部使用数值稳定的实现：
+```python
+# 数值稳定的实现
+log_softmax = x - log(sum(exp(x)))
+# 避免了 exp 和 log 的数值问题
+```
+
+**6. 如何获取概率？**
+
+如果需要概率，可以手动添加 softmax：
+
+```python
+# 方法1：训练时不加 softmax，推理时加
+net = nn.Sequential(nn.Flatten(), nn.Linear(784, 10))
+logits = net(X)
+probs = torch.softmax(logits, dim=1)  # 手动计算概率
+
+# 方法2：在模型中包含 softmax（不推荐用于训练）
+net = nn.Sequential(
+    nn.Flatten(),
+    nn.Linear(784, 10),
+    nn.Softmax(dim=1)  # 不推荐，会导致数值不稳定
+)
+```
+
+**7. 训练流程**：
+
+```python
+# 定义优化算法
+trainer = torch.optim.SGD(net.parameters(), lr=0.1)
+
+# 训练模型
+for epoch in range(num_epochs):
+    for X, y in train_iter:
+        # 前向传播：输出 logits
+        logits = net(X)
+        # 计算损失：内部包含 softmax
+        l = loss(logits, y)
+        # 清零梯度
+        trainer.zero_grad()
+        # 反向传播
+        l.mean().backward()
+        # 更新参数
+        trainer.step()
+```
+
+**总结**：
+
+| 特性 | 说明 |
+|------|------|
+| 网络输出 | logits（未归一化的分数） |
+| Softmax 位置 | 在 `nn.CrossEntropyLoss` 内部 |
+| 优势 | 数值稳定性更好 |
+| 推荐做法 | 训练时使用 logits + CrossEntropyLoss，推理时手动计算 softmax |
 
 ## 3.8 总结
 
