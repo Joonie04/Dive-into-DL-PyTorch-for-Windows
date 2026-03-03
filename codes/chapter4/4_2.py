@@ -1,3 +1,5 @@
+# 4.2 多层感知机的从零开始实现
+
 import torch  # 导入PyTorch库
 from torch import nn  # 导入PyTorch神经网络模块
 import torchvision  # 导入torchvision库，用于计算机视觉任务
